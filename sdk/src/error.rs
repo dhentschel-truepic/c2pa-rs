@@ -231,7 +231,7 @@ pub enum Error {
     CborError(#[from] serde_cbor::Error),
 
     #[error(transparent)]
-    #[cfg(feature = "file_io")]
+    #[cfg(feature = "use_openssl")]
     OpenSslError(#[from] openssl::error::ErrorStack),
 
     #[error(transparent)]
@@ -248,7 +248,7 @@ pub(crate) fn wrap_io_err(err: std::io::Error) -> Error {
     Error::IoError(err)
 }
 
-#[cfg(feature = "file_io")]
+#[cfg(feature = "use_openssl")]
 pub(crate) fn wrap_openssl_err(err: openssl::error::ErrorStack) -> Error {
     Error::OpenSslError(err)
 }

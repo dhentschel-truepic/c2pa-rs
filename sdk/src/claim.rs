@@ -11,12 +11,18 @@
 // specific language governing permissions and limitations under
 // each license.
 
-use std::{collections::HashMap, fmt, path::Path};
+#[cfg(feature = "use_openssl")]
+use std::path::Path;
+
+use std::{collections::HashMap, fmt};
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use uuid::Uuid;
+
+#[cfg(feature = "use_openssl")]
+use crate::cose_validator::{verify_cose, verify_cose_async};
 
 use crate::{
     assertion::{
@@ -24,7 +30,7 @@ use crate::{
         AssertionBase, AssertionData,
     },
     assertions::{self, labels, BmffHash, DataHash},
-    cose_validator::{get_signing_info, verify_cose, verify_cose_async},
+    cose_validator::get_signing_info,
     error::{Error, Result},
     hashed_uri::HashedUri,
     jumbf::{
@@ -34,10 +40,15 @@ use crate::{
         },
     },
     salt::{SaltGenerator, NO_SALT},
-    status_tracker::{log_item, OneShotStatusTracker, StatusTracker},
+    status_tracker::OneShotStatusTracker,
     utils::hash_utils::{hash_by_alg, vec_compare, verify_by_alg},
-    validation_status,
     validator::ValidationInfo,
+};
+
+#[cfg(feature = "use_openssl")]
+use crate::{
+    status_tracker::{log_item, StatusTracker},
+    validation_status,
 };
 
 const BUILD_HASH_ALG: &str = "sha256";
@@ -48,6 +59,7 @@ use HashedUri as C2PAAssertion;
 const GH_FULL_VERSION_LIST: &str = "Sec-CH-UA-Full-Version-List";
 const GH_UA: &str = "Sec-CH-UA";
 
+#[cfg(feature = "use_openssl")]
 pub enum ClaimAssetData<'a> {
     PathData(&'a Path),
     ByteData(&'a [u8]),
@@ -718,6 +730,7 @@ impl Claim {
     /// Verify claim signature, assertion store and asset hashes
     /// claim - claim to be verified
     /// asset_bytes - reference to bytes of the asset
+    #[cfg(feature = "use_openssl")]
     pub async fn verify_claim_async<'a>(
         claim: &Claim,
         asset_bytes: &'a [u8],
@@ -770,6 +783,7 @@ impl Claim {
     /// Verify claim signature, assertion store and asset hashes
     /// claim - claim to be verified
     /// asset_bytes - reference to bytes of the asset
+    #[cfg(feature = "use_openssl")]
     pub fn verify_claim<'a>(
         claim: &Claim,
         asset_data: &ClaimAssetData<'a>,
@@ -807,6 +821,7 @@ impl Claim {
         Claim::verify_internal(claim, asset_data, is_provenance, verified, validation_log)
     }
 
+    #[cfg(feature = "use_openssl")]
     fn verify_internal<'a>(
         claim: &Claim,
         asset_data: &ClaimAssetData<'a>,

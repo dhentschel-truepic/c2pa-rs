@@ -20,10 +20,14 @@ use coset::{
     iana, CoseSign1, CoseSign1Builder, Header, HeaderBuilder, Label, TaggedCborSerializable,
 };
 
+#[cfg(feature = "use_openssl")]
+use crate::cose_validator::verify_cose;
+
+#[cfg(feature = "use_openssl")]
+use crate::status_tracker::OneShotStatusTracker;
+
 use crate::{
     claim::Claim,
-    cose_validator::verify_cose,
-    status_tracker::OneShotStatusTracker,
     time_stamp::{cose_timestamp_countersign, make_cose_timestamp},
     Error, Result, Signer, SigningAlg,
 };
@@ -51,7 +55,9 @@ pub fn sign_claim(claim_bytes: &[u8], signer: &dyn Signer, box_size: usize) -> R
     let _claim = Claim::from_data(label, claim_bytes)?;
 
     // Generate and verify a CoseSign1 representation of the data.
-    cose_sign(signer, claim_bytes, box_size).and_then(|sig| {
+    cose_sign(signer, claim_bytes, box_size)
+    /*
+    .and_then(|sig| {
         // Sanity check: Ensure that this signature is valid.
         let mut cose_log = OneShotStatusTracker::new();
 
@@ -66,6 +72,7 @@ pub fn sign_claim(claim_bytes: &[u8], signer: &dyn Signer, box_size: usize) -> R
             Err(err) => Err(err),
         }
     })
+    */
 }
 
 /// Returns signed Cose_Sign1 bytes for `data`.

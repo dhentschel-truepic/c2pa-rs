@@ -28,8 +28,12 @@ use crate::{
     store::Store,
     validation_status::{self, ValidationStatus},
 };
+
+#[cfg(feature = "use_openssl")]
+use crate::validation_status::status_for_store;
+
 #[cfg(feature = "file_io")]
-use crate::{error::wrap_io_err, validation_status::status_for_store, xmp_inmemory_utils::XmpInfo};
+use crate::{error::wrap_io_err, xmp_inmemory_utils::XmpInfo};
 
 /// Function that is used by serde to determine whether or not we should serialize
 /// thumbnail data based on the "serialize_thumbnails" flag (serialization is disabled by default)
@@ -360,6 +364,7 @@ impl Ingredient {
     }
 
     #[cfg(feature = "file_io")]
+    #[cfg(feature = "use_openssl")]
     /// Creates an `Ingredient` from a file path.
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         Self::from_file_with_options(path.as_ref(), &DefaultOptions {})
@@ -377,6 +382,7 @@ impl Ingredient {
 
     /// Creates an `Ingredient` from a file path and options.
     #[cfg(feature = "file_io")]
+    #[cfg(feature = "use_openssl")]
     pub fn from_file_with_options<P: AsRef<Path>>(
         path: P,
         options: &dyn IngredientOptions,
@@ -385,6 +391,7 @@ impl Ingredient {
     }
     // Internal implementation to avoid code bloat.
     #[cfg(feature = "file_io")]
+    #[cfg(feature = "use_openssl")]
     fn from_file_impl(path: &Path, options: &dyn IngredientOptions) -> Result<Self> {
         // these are declared inside this function in order to isolate them for wasm builds
         use crate::{

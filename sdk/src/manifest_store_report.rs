@@ -13,17 +13,17 @@
 
 use std::collections::HashMap;
 #[cfg(feature = "file_io")]
+#[cfg(feature = "use_openssl")]
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+#[cfg(feature = "use_openssl")]
+use crate::status_tracker::{DetailedStatusTracker, StatusTracker};
+
 use crate::{
-    assertion::AssertionData,
-    claim::Claim,
-    status_tracker::{DetailedStatusTracker, StatusTracker},
-    store::Store,
-    validation_status::ValidationStatus,
+    assertion::AssertionData, claim::Claim, store::Store, validation_status::ValidationStatus,
     Result,
 };
 
@@ -54,6 +54,7 @@ impl ManifestStoreReport {
     }
 
     /// Creates a ManifestStoreReport from an existing Store and a validation log
+    #[cfg(feature = "use_openssl")]
     pub(crate) fn from_store_with_log(
         store: &Store,
         validation_log: &mut impl StatusTracker,
@@ -78,6 +79,7 @@ impl ManifestStoreReport {
     }
 
     /// Creates a ManifestStoreReport from image bytes and a format
+    #[cfg(feature = "use_openssl")]
     pub fn from_bytes(format: &str, image_bytes: &[u8]) -> Result<Self> {
         let mut validation_log = DetailedStatusTracker::new();
         let store = Store::load_from_memory(format, image_bytes, true, &mut validation_log)?;
@@ -85,6 +87,7 @@ impl ManifestStoreReport {
     }
 
     /// Creates a ManifestStoreReport from a file
+    #[cfg(feature = "use_openssl")]
     #[cfg(feature = "file_io")]
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let mut validation_log = DetailedStatusTracker::new();

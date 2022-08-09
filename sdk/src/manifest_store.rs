@@ -13,12 +13,16 @@
 
 use std::collections::HashMap;
 #[cfg(feature = "file_io")]
+#[cfg(feature = "use_openssl")]
 use std::path::Path;
 
 use serde::Serialize;
 
+#[cfg(feature = "use_openssl")]
+use crate::status_tracker::DetailedStatusTracker;
+
 use crate::{
-    status_tracker::{DetailedStatusTracker, StatusTracker},
+    status_tracker::StatusTracker,
     store::Store,
     validation_status::{status_for_store, ValidationStatus},
     Manifest, Result,
@@ -116,6 +120,7 @@ impl ManifestStore {
     }
 
     /// generate a Store from a format string and bytes
+    #[cfg(feature = "use_openssl")]
     pub fn from_bytes(format: &str, image_bytes: Vec<u8>, verify: bool) -> Result<ManifestStore> {
         let mut validation_log = DetailedStatusTracker::new();
 
@@ -136,6 +141,7 @@ impl ManifestStore {
     /// # Ok(())
     /// # }
     /// ```
+    #[cfg(feature = "use_openssl")]
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<ManifestStore> {
         let mut validation_log = DetailedStatusTracker::new();
 
@@ -144,6 +150,7 @@ impl ManifestStore {
     }
 
     /// Loads a ManifestStore from a file
+    #[cfg(feature = "use_openssl")]
     pub async fn from_bytes_async(
         format: &str,
         image_bytes: Vec<u8>,

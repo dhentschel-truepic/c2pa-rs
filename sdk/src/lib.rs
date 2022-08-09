@@ -86,7 +86,7 @@ pub mod assertions;
 
 mod cose_validator;
 
-#[cfg(feature = "file_io")]
+#[cfg(feature = "use_openssl")]
 pub mod create_signer;
 
 mod error;
@@ -110,9 +110,9 @@ mod signing_alg;
 #[cfg(feature = "file_io")]
 pub use ingredient::{DefaultOptions, IngredientOptions};
 pub use signing_alg::{SigningAlg, UnknownAlgorithmError};
-#[cfg(feature = "file_io")]
+#[cfg(feature = "use_openssl")]
 pub(crate) mod ocsp_utils;
-#[cfg(feature = "file_io")]
+#[cfg(feature = "use_openssl")]
 mod openssl;
 
 #[cfg(feature = "file_io")]

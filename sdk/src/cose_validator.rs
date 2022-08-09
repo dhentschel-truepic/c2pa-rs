@@ -12,17 +12,22 @@
 // each license.
 
 use ciborium::value::Value;
+#[cfg(feature = "use_openssl")]
 use conv::*;
-use coset::{sig_structure_data, Label, TaggedCborSerializable};
-use x509_parser::{
-    der_parser::{ber::parse_ber_sequence, oid},
-    oid_registry::Oid,
-    prelude::*,
-};
+#[cfg(feature = "use_openssl")]
+use coset::sig_structure_data;
+use coset::{Label, TaggedCborSerializable};
+#[cfg(feature = "use_openssl")]
+use x509_parser::der_parser::{ber::parse_ber_sequence, oid};
+#[cfg(feature = "use_openssl")]
+use x509_parser::oid_registry::Oid;
+use x509_parser::prelude::*;
 
 #[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "use_openssl")]
 use crate::validator::{get_validator, CoseValidator};
 #[cfg(target_arch = "wasm32")]
+#[cfg(feature = "use_openssl")]
 use crate::wasm::webcrypto_validator::validate_async;
 use crate::{
     asn1::rfc3161::TstInfo,
@@ -34,21 +39,37 @@ use crate::{
     SigningAlg,
 };
 
+#[cfg(feature = "use_openssl")]
 const RSA_OID: Oid<'static> = oid!(1.2.840 .113549 .1 .1 .1);
+#[cfg(feature = "use_openssl")]
 const EC_PUBLICKEY_OID: Oid<'static> = oid!(1.2.840 .10045 .2 .1);
+#[cfg(feature = "use_openssl")]
 const ECDSA_WITH_SHA256_OID: Oid<'static> = oid!(1.2.840 .10045 .4 .3 .2);
+#[cfg(feature = "use_openssl")]
 const ECDSA_WITH_SHA384_OID: Oid<'static> = oid!(1.2.840 .10045 .4 .3 .3);
+#[cfg(feature = "use_openssl")]
 const ECDSA_WITH_SHA512_OID: Oid<'static> = oid!(1.2.840 .10045 .4 .3 .4);
+#[cfg(feature = "use_openssl")]
 const RSASSA_PSS_OID: Oid<'static> = oid!(1.2.840 .113549 .1 .1 .10);
+#[cfg(feature = "use_openssl")]
 const SHA256_WITH_RSAENCRYPTION_OID: Oid<'static> = oid!(1.2.840 .113549 .1 .1 .11);
+#[cfg(feature = "use_openssl")]
 const SHA384_WITH_RSAENCRYPTION_OID: Oid<'static> = oid!(1.2.840 .113549 .1 .1 .12);
+#[cfg(feature = "use_openssl")]
 const SHA512_WITH_RSAENCRYPTION_OID: Oid<'static> = oid!(1.2.840 .113549 .1 .1 .13);
+#[cfg(feature = "use_openssl")]
 const ED25519_OID: Oid<'static> = oid!(1.3.101 .112);
+#[cfg(feature = "use_openssl")]
 const SHA256_OID: Oid<'static> = oid!(2.16.840 .1 .101 .3 .4 .2 .1);
+#[cfg(feature = "use_openssl")]
 const SHA384_OID: Oid<'static> = oid!(2.16.840 .1 .101 .3 .4 .2 .2);
+#[cfg(feature = "use_openssl")]
 const SHA512_OID: Oid<'static> = oid!(2.16.840 .1 .101 .3 .4 .2 .3);
+#[cfg(feature = "use_openssl")]
 const SECP521R1_OID: Oid<'static> = oid!(1.3.132 .0 .35);
+#[cfg(feature = "use_openssl")]
 const SECP384R1_OID: Oid<'static> = oid!(1.3.132 .0 .34);
+#[cfg(feature = "use_openssl")]
 const PRIME256V1_OID: Oid<'static> = oid!(1.2.840 .10045 .3 .1 .7);
 
 /********************** Supported Valiators ***************************************
@@ -90,6 +111,7 @@ fn get_cose_sign1(
         }
     }
 }
+#[cfg(feature = "use_openssl")]
 fn check_cert(
     _alg: SigningAlg,
     ca_der_bytes: &[u8],
@@ -632,6 +654,7 @@ fn extract_subject_from_cert(cert: &X509Certificate) -> Result<String> {
 /// data:  data that was used to create the cose_bytes, these must match
 /// addition_data: additional optional data that may have been used during signing
 /// returns - Ok on success
+#[cfg(feature = "use_openssl")]
 pub async fn verify_cose_async(
     cose_bytes: Vec<u8>,
     data: Vec<u8>,
@@ -769,6 +792,7 @@ pub fn get_signing_info(
 /// addition_data: additional optional data that may have been used during signing
 /// returns - Ok on success
 #[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "use_openssl")]
 pub fn verify_cose(
     cose_bytes: &[u8],
     data: &[u8],
@@ -863,6 +887,7 @@ pub fn verify_cose(
 }
 
 #[cfg(target_arch = "wasm32")]
+#[cfg(feature = "use_openssl")]
 pub fn verify_cose(
     _cose_bytes: &[u8],
     _data: &[u8],
@@ -874,6 +899,7 @@ pub fn verify_cose(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "use_openssl")]
 fn validate_with_cert(
     validator: Box<dyn CoseValidator>,
     sig: &[u8],
@@ -894,6 +920,7 @@ fn validate_with_cert(
 }
 
 #[cfg(target_arch = "wasm32")]
+#[cfg(feature = "use_openssl")]
 async fn validate_with_cert_async(
     signing_alg: SigningAlg,
     sig: &[u8],
@@ -913,6 +940,7 @@ async fn validate_with_cert_async(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "use_openssl")]
 async fn validate_with_cert_async(
     signing_alg: SigningAlg,
     sig: &[u8],
@@ -935,6 +963,7 @@ async fn validate_with_cert_async(
 }
 #[allow(unused_imports)]
 #[cfg(feature = "file_io")]
+#[cfg(feature = "use_openssl")]
 #[cfg(test)]
 pub mod tests {
     #![allow(clippy::unwrap_used)]

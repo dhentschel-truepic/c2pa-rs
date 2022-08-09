@@ -99,6 +99,7 @@ pub struct DetailedStatusTracker {
 }
 
 impl DetailedStatusTracker {
+    #[cfg(feature = "use_openssl")]
     pub fn new() -> Self {
         DetailedStatusTracker {
             logged_items: Vec::new(),

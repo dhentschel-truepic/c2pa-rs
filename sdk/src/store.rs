@@ -22,13 +22,19 @@ use log::error;
 use crate::embedded_xmp;
 #[cfg(feature = "async_signer")]
 use crate::AsyncSigner;
+
+#[cfg(feature = "use_openssl")]
+use crate::cose_validator::verify_cose;
+
+#[cfg(feature = "use_openssl")]
+use crate::claim::ClaimAssetData;
+
 #[cfg(feature = "file_io")]
 use crate::{
     assertion::AssertionData,
     assertions::{BmffHash, DataHash, DataMap, ExclusionsMap, SubsetMap},
     asset_io::{HashBlockObjectType, HashObjectPositions},
     cose_sign::cose_sign,
-    cose_validator::verify_cose,
     jumbf_io::{
         get_supported_file_extension, is_bmff_format, load_jumbf_from_file, object_locations,
         save_jumbf_to_file,
@@ -39,19 +45,23 @@ use crate::{
     },
     Signer,
 };
+
+#[cfg(feature = "use_openssl")]
+use crate::hash_utils::verify_by_alg;
+
 use crate::{
     assertion::{Assertion, AssertionBase, AssertionDecodeError, AssertionDecodeErrorCause},
     assertions::{labels, Ingredient, Relationship},
-    claim::{Claim, ClaimAssertion, ClaimAssetData},
+    claim::{Claim, ClaimAssertion},
     error::{Error, Result},
-    hash_utils::{hash_by_alg, vec_compare, verify_by_alg},
+    hash_utils::{hash_by_alg, vec_compare},
     jumbf::{self, boxes::*},
-    jumbf_io::{get_cailoader_handler, load_jumbf_from_memory},
+    jumbf_io::load_jumbf_from_memory,
     status_tracker::{log_item, OneShotStatusTracker, StatusTracker},
-    validation_status,
-    xmp_inmemory_utils::extract_provenance,
-    ManifestStoreReport,
+    validation_status, ManifestStoreReport,
 };
+#[cfg(feature = "use_openssl")]
+use crate::{jumbf_io::get_cailoader_handler, xmp_inmemory_utils::extract_provenance};
 
 /// A `Store` maintains a list of `Claim` structs.
 ///
@@ -334,7 +344,9 @@ impl Store {
     ) -> Result<Vec<u8>> {
         let claim_bytes = claim.data()?;
 
-        cose_sign(signer, &claim_bytes, box_size).and_then(|sig| {
+        cose_sign(signer, &claim_bytes, box_size)
+        /*
+        .and_then(|sig| {
             // Sanity check: Ensure that this signature is valid.
 
             let mut cose_log = OneShotStatusTracker::new();
@@ -349,6 +361,7 @@ impl Store {
                 }
             }
         })
+        */
     }
 
     /// Sign the claim asynchronously and return signature.
@@ -359,13 +372,18 @@ impl Store {
         signer: &dyn AsyncSigner,
         box_size: usize,
     ) -> Result<Vec<u8>> {
-        use crate::{cose_sign::cose_sign_async, cose_validator::verify_cose_async};
+        use crate::cose_sign::cose_sign_async;
+
+        #[cfg(feature = "use_openssl")]
+        use crate::cose_validator::verify_cose_async;
 
         let claim_bytes = claim.data()?;
 
         match cose_sign_async(signer, &claim_bytes, box_size).await {
             // Sanity check: Ensure that this signature is valid.
-            Ok(sig) => {
+            Ok(sig) => Ok(sig),
+            /*
+            {
                 let mut cose_log = OneShotStatusTracker::new();
                 match verify_cose_async(
                     sig.clone(),
@@ -386,6 +404,7 @@ impl Store {
                     }
                 }
             }
+            */
             Err(e) => Err(e),
         }
     }
@@ -968,6 +987,7 @@ impl Store {
     }
 
     // verify the provenance of the claim
+    #[cfg(feature = "use_openssl")]
     fn provenance_checks<'a>(
         store: &'a Store,
         xmp_opt: Option<String>,
@@ -1007,6 +1027,7 @@ impl Store {
     }
 
     // wake the ingredients and validate
+    #[cfg(feature = "use_openssl")]
     fn ingredient_checks<'a>(
         store: &Store,
         claim: &Claim,
@@ -1117,6 +1138,7 @@ impl Store {
     }
 
     // wake the ingredients and validate
+    #[cfg(feature = "use_openssl")]
     async fn ingredient_checks_async(
         store: &Store,
         claim: &Claim,
@@ -1187,6 +1209,7 @@ impl Store {
     /// xmp_str: String containing entire XMP block of the asset
     /// asset_bytes: bytes of the asset to be verified
     /// validation_log: If present all found errors are logged and returned, other wise first error causes exit and is returned  
+    #[cfg(feature = "use_openssl")]
     pub async fn verify_store_async(
         store: &Store,
         xmp_opt: Option<String>,
@@ -1208,6 +1231,7 @@ impl Store {
     /// xmp_str: String containing entire XMP block of the asset
     /// asset_bytes: bytes of the asset to be verified
     /// validation_log: If present all found errors are logged and returned, other wise first error causes exit and is returned  
+    #[cfg(feature = "use_openssl")]
     pub fn verify_store<'a>(
         store: &Store,
         xmp_opt: Option<String>,
@@ -1603,6 +1627,7 @@ impl Store {
     /// asset_path: path to input asset
     /// validation_log: If present all found errors are logged and returned, otherwise first error causes exit and is returned  
     #[cfg(feature = "file_io")]
+    #[cfg(feature = "use_openssl")]
     pub fn verify_from_path<'a>(
         &mut self,
         asset_path: &'a Path,
@@ -1638,6 +1663,7 @@ impl Store {
     }
 
     // verify from a buffer without file i/o
+    #[cfg(feature = "use_openssl")]
     pub fn verify_from_buffer(
         &mut self,
         buf: &[u8],
@@ -1710,11 +1736,8 @@ impl Store {
     /// verify: determines whether to verify the contents of the provenance claim.  Must be set true to use validation_log
     /// validation_log: If present all found errors are logged and returned, otherwise first error causes exit and is returned  
     #[cfg(feature = "file_io")]
-    pub fn load_from_asset(
-        asset_path: &Path,
-        verify: bool,
-        validation_log: &mut impl StatusTracker,
-    ) -> Result<Store> {
+    #[cfg(feature = "use_openssl")]
+    pub fn load_from_asset(verify: bool, validation_log: &mut impl StatusTracker) -> Result<Store> {
         // load jumbf if available
         Self::load_cai_from_file(asset_path, validation_log)
             .and_then(|mut store| {
@@ -1741,6 +1764,7 @@ impl Store {
             })
     }
 
+    #[cfg(feature = "use_openssl")]
     fn get_store_from_memory(
         asset_type: &str,
         data: &[u8],
@@ -1775,6 +1799,7 @@ impl Store {
     /// data: reference to bytes of the the file
     /// verify: if true will run verification checks when loading
     /// validation_log: If present all found errors are logged and returned, otherwise first error causes exit and is returned
+    #[cfg(feature = "use_openssl")]
     pub fn load_from_memory<'a>(
         asset_type: &str,
         data: &'a [u8],
@@ -1814,6 +1839,7 @@ impl Store {
     /// data: reference to bytes of the the file
     /// verify: if true will run verification checks when loading
     /// validation_log: If present all found errors are logged and returned, otherwise first error causes exit and is returned
+    #[cfg(feature = "use_openssl")]
     pub async fn load_from_memory_async(
         asset_type: &str,
         data: &[u8],
